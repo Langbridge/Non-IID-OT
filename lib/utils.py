@@ -61,15 +61,18 @@ def preprocess_ACS_data(data: pd.DataFrame, u='SCHL', s='RAC1P', u_thresh=1.0, s
 
     return data
 
-def repair_year_state(stopping_data: pd.DataFrame, other_data: pd.DataFrame):
-    pass
-#     assert ['u', 's'] in stopping_data.columns, "Data must contain columns 'u' and 's' to be repaired."
+def repair_year_state(stopping_data: pd.DataFrame, data: pd.DataFrame):
+    assert ('u' in stopping_data.columns) & ('s' in stopping_data.columns), "Data must contain columns 'u' and 's' to be repaired."
+    assert ('u' in data.columns) & ('s' in data.columns), "Data must contain columns 'u' and 's' to be repaired."
 
-#     for f in stopping_data.feat
-#     repair_operation = StoppingRepair(stopping_data)
-#     repaired_stopping_data = repair_operation.repair(data)
+    repair_operation = StoppingRepair(stopping_data)
+    repaired_data = repair_operation.repair(data)
 
-#     report = eval_report(data, repaired_data)
+    report = eval_report(data, repaired_data)
 
-#     return repaired_data, report
+    return repaired_data, report
 
+def representation_bias_report(data: pd.DataFrame):
+    assert ('u' in data.columns) & ('s' in data.columns), "Data must contain columns 'u' and 's' to be repaired."
+
+    print(data[['u','s']].value_counts().sort_index(ascending=False) / len(data))

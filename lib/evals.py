@@ -25,27 +25,24 @@ def eval_invariance(x_0: np.array, x_1: np.array, n=500):
     return _eval_kld(x_0, x_1, n)
 
 def eval_report(data: pd.DataFrame, repaired_data: pd.DataFrame):
-    report = {
-        'damage': {},
-        'invariance': {},
-    }
-
     # data = df with features, u and s columns
     feats = data.drop(columns=['s', 'u']).columns
 
+    report = {
+        f: {'damage': {}, 'invariance': {}} for f in feats
+    }
+
     for f in feats:
-        report['damage'][f] = {}
-        report['invariance'][f] = {}
 
         for u_val in data['u'].unique():
             # data damage, \in {0, \inf}
-            report['damage'][f][u_val] = eval_damage(data[(data['u'] == u_val)][f].to_numpy(),
+            report[f]['damage'][u_val] = eval_damage(data[(data['u'] == u_val)][f].to_numpy(),
                                                      repaired_data[(data['u'] == u_val)][f].to_numpy())
             
             # s-invariance scaled according to original damage, \in {0,1}
-            report['invariance'][f][u_val] = eval_invariance(repaired_data[(repaired_data['s'] == 0) & (repaired_data['u'] == u_val)][f].to_numpy(),
+            report[f]['invariance'][u_val] = eval_invariance(repaired_data[(repaired_data['s'] == 0) & (repaired_data['u'] == u_val)][f].to_numpy(),
                                                              repaired_data[(repaired_data['s'] != 0) & (repaired_data['u'] == u_val)][f].to_numpy())
-            report['invariance'][f][u_val] /= eval_invariance(data[(data['s'] == 0) & (data['u'] == u_val)][f].to_numpy(),
+            report[f]['invariance'][u_val] /= eval_invariance(data[(data['s'] == 0) & (data['u'] == u_val)][f].to_numpy(),
                                                              data[(data['s'] != 0) & (data['u'] == u_val)][f].to_numpy())
             
     return report
