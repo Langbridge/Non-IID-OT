@@ -7,7 +7,7 @@ from COT.stopping import StoppingRule, WeightedStoppingRule
 
 class RecursiveStoppingRule():
     def __init__(self, N_bar, x_min, x_max, epsilon, v_init, g_hat_init=0, g_hat_2_init=0, a_init=0.01, b_init=0.01, F_hat=None):
-        self.curr_rule = StoppingRule(N_bar, x_min, x_max, epsilon, v_init, g_hat_init, g_hat_2_init, a_init, b_init, F_hat)
+        self.curr_rule = WeightedStoppingRule(N_bar, x_min, x_max, epsilon, v_init, g_hat_init, g_hat_2_init, a_init, b_init, F_hat)
 
         self.N_bar = N_bar
         self.x_min = x_min
@@ -40,11 +40,24 @@ class RecursiveStoppingRule():
         a = self.curr_rule.a
         b = self.curr_rule.b
 
+        new_rule = WeightedStoppingRule(self.N_bar, self.x_min, self.x_max, self.epsilon, v, g_hat, g_hat_2, a, b, self.F_hat_init)
+
         # decimate vertices from previous rule as start for next rule
-        new_rule = StoppingRule(self.N_bar, self.x_min, self.x_max, self.epsilon, v, g_hat, g_hat_2, a, b, self.F_hat_init)
+        decimated_verts = {v: n for v,n in zip(self.curr_rule.verts[1:-1], self.curr_rule.verts_weights[1:-1])} # ignore xmin and xmax
+        for i in range(int(np.floor((1-l) * np.sum(self.curr_rule.verts_weights[1:-1])))):
+
+            remove_vert = np.random.choice(list(decimated_verts.keys()), p=list(decimated_verts.values()) / np.sum(list(decimated_verts.values())))
+            decimated_verts[remove_vert] -= 1 # reduce count on decimated vertex
+
+            if decimated_verts[remove_vert] <= 0: # remove vertex if empty
+                decimated_verts.pop(remove_vert)
+
         new_rule.verts = np.hstack([self.x_min,
-                                    np.sort(np.random.choice(self.curr_rule.verts[1:-1], int(np.floor(l * len(self.curr_rule.verts))), replace=False)),
+                                    list(decimated_verts.keys()),
                                     self.x_max])
+        new_rule.verts_weights = np.hstack([1,
+                                            list(decimated_verts.values()),
+                                            1])
 
         # redirect sample to current rule
         self.rules.append(self.curr_rule)

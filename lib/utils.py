@@ -5,7 +5,7 @@ from lib.evals import eval_report
 
 import sys
 sys.path.insert(0, "/Users/al4518/Desktop/PhD/FPD-OT/FPD-OT/COT")
-from repair import StoppingRepair
+from repair import StoppingRepair, GeometricRepair, DistributionalRepair
 
 def post_2018_relp_mapping(df: pd.DataFrame):
     relp_mapping = {
@@ -61,14 +61,21 @@ def preprocess_ACS_data(data: pd.DataFrame, u='SCHL', s='RAC1P', u_thresh=1.0, s
 
     return data
 
-def repair_year_state(stopping_data: pd.DataFrame, data: pd.DataFrame):
+def repair_year_state(stopping_data: pd.DataFrame, data: pd.DataFrame, n=500, method='KLD', repair_method='stopping'):
     assert ('u' in stopping_data.columns) & ('s' in stopping_data.columns), "Data must contain columns 'u' and 's' to be repaired."
     assert ('u' in data.columns) & ('s' in data.columns), "Data must contain columns 'u' and 's' to be repaired."
+    assert repair_method in ['stopping', 'geometric', 'distributional'], "Invalid repair method chosen."
 
-    repair_operation = StoppingRepair(stopping_data)
+    if repair_method == 'stopping':
+        repair_operation = StoppingRepair(stopping_data)
+    elif repair_method == 'distributional':
+        repair_operation = DistributionalRepair(stopping_data, n_q=n)
+    else:
+        repair_operation = GeometricRepair(stopping_data)
+
     repaired_data = repair_operation.repair(data)
 
-    report = eval_report(data, repaired_data)
+    report = eval_report(data, repaired_data, n=n, method=method)
 
     return repaired_data, report
 
