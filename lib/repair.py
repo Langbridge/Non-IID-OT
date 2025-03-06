@@ -13,16 +13,26 @@ class RecursiveStoppingRepair():
     # use mu_0 and mu_1 to calculate the optimal map, T
     # coerce point as in StoppingRepair
         
-    def __init__(self, rules: dict, u_vals=[0,1]):
+    def __init__(self, rules: dict, u_vals=[0,1], centres=False):
         self.u_vals = u_vals
+        self.centres = centres
 
         self.T = self.design_repair(rules)
 
     def _dist_approx(self, rules: dict):
         # test with cell centres, too??
-        self.mu = {u: {s: rules[u][s].curr_rule.verts[1:-1] for s in [0,1]} for u in self.u_vals} # get vertices from corresponding stopping rule
+        if self.centres:
+            self.mu = {u: {s: self._find_centres(rules[u][s].curr_rule.verts[1:-1]) for s in [0,1]} for u in self.u_vals} # get centres from corresponding verts
+        else:
+            self.mu = {u: {s: rules[u][s].curr_rule.verts[1:-1] for s in [0,1]} for u in self.u_vals} # get vertices from corresponding stopping rule
 
         self.weights = {u: {s: rules[u][s].curr_rule.verts_weights[1:-1] / np.sum(rules[u][s].curr_rule.verts_weights[1:-1]) for s in [0,1]} for u in self.u_vals} # get weights for each vertex
+
+    def _find_centres(self, verts):
+        ub = verts[-1] + (verts[-1] - verts[-2])
+        verts = np.insert(verts, len(verts), ub, axis=0)
+
+        return 0.5*(verts[1:] + verts[:-1])
 
     def design_repair(self, rules: dict):
         self._dist_approx(rules)
